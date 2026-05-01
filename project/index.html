@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Expression Grammar Validator</title>
+
+<style>
+body {
+    background: linear-gradient(135deg, #0f172a, #020617);
+    color: white;
+    font-family: Arial;
+    text-align: center;
+}
+
+textarea {
+    width: 60%;
+    height: 180px;
+    margin-top: 20px;
+    padding: 15px;
+    background: #020617;
+    border: 2px solid #22c55e;
+    color: white;
+    border-radius: 10px;
+}
+
+button {
+    margin-top: 20px;
+    padding: 12px 25px;
+    border-radius: 25px;
+    background: linear-gradient(90deg, #06b6d4, #22c55e);
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+#result {
+    margin-top: 30px;
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 20px;
+    border-radius: 10px;
+    background: #020617;
+    text-align: left;
+}
+
+.valid { color: #22c55e; }
+.invalid { color: #ef4444; }
+.warning { color: #facc15; }
+</style>
+</head>
+
+<body>
+
+<h1>Expression Grammar Validator</h1>
+
+<textarea id="grammar" placeholder="Enter grammar..."></textarea><br>
+<button onclick="validateGrammar()">Validate Grammar</button>
+
+<div id="result"></div>
+
+<script>
+async function validateGrammar() {
+    const input = document.getElementById("grammar").value;
+    const resultDiv = document.getElementById("result");
+
+    resultDiv.innerHTML = "Analyzing...";
+
+    try {
+        const res = await fetch("http://127.0.0.1:5000/validate", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ grammar: input })
+        });
+
+        const data = await res.json();
+
+        let html = `<b>Start Symbol:</b> ${data.start}<br><br>`;
+
+        if (data.status === "VALID") {
+            html += "<div class='valid'>✔ VALID</div>";
+        } else {
+            html += "<div class='invalid'>✖ INVALID</div>";
+        }
+
+        for (let nt in data.details) {
+            html += `<br><b>${nt}</b>`;
+
+            if (data.details[nt][0] === "✓") {
+                html += " ✔";
+            } else {
+                data.details[nt].forEach(e => {
+                    html += `<div class="invalid">• ${e}</div>`;
+                });
+            }
+        }
+
+        if (data.errors.length > 0) {
+            html += "<br><b>Errors:</b>";
+            data.errors.forEach(e => {
+                html += `<div class="invalid">• ${e}</div>`;
+            });
+        }
+
+        if (data.warnings.length > 0) {
+            html += "<br><b>Warnings:</b>";
+            data.warnings.forEach(w => {
+                html += `<div class="warning">• ${w}</div>`;
+            });
+        }
+
+        resultDiv.innerHTML = html;
+
+    } catch {
+        resultDiv.innerHTML = "<div class='invalid'>Backend not running</div>";
+    }
+}
+</script>
+
+</body>
+</html>
